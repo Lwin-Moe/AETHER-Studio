@@ -1,4 +1,4 @@
-# AETHER FILMWORKS · GitHub + Streamlit Edition
+# AETHER FILMWORKS · GitHub + Streamlit Edition · Build 55 Pro
 
 Streamlit Community Cloud ကို clean UI အဖြစ်အသုံးပြုပြီး GitHub Actions ကို
 detached background video worker အဖြစ်အသုံးပြုထားသော AETHER Studio ဖြစ်သည်။
@@ -13,6 +13,22 @@ detached background video worker အဖြစ်အသုံးပြုထာ�
 - Epic Series
 - Veo Video
 - Lyria Music
+
+## Build 55 Pro တွင်အသစ်ပါဝင်သောအရာများ
+
+- Completed job card ထဲတွင် full-length lightweight MP4 preview ကို တိုက်ရိုက်ကြည့်နိုင်ခြင်း
+- Preview MP4 နှင့် output ZIP ကို သီးခြား download လုပ်နိုင်ခြင်း
+- Noto Sans/Serif Myanmar font၊ font size၊ text/outline/background color ရွေးနိုင်သော Subtitle Designer
+- Clean White, Gold Cinematic, Shorts Bold နှင့် Readable Box subtitle presets
+- Top/Center/Bottom position၊ outline၊ shadow နှင့် mobile safe margin settings
+- SRT download အပြင် styled ASS subtitle file ထုတ်ပေးခြင်း
+- H.264/AAC/pixel format/duration စစ်ထားသော `render_report.json`
+- Failed GitHub job ကို မူလ settings အတိုင်း Dashboard မှ retry လုပ်နိုင်ခြင်း
+- Source media အသုံးပြုခွင့် confirmation နှင့် mobile-first layout
+
+Preview သည် final video ကို 540px wide H.264 proxy အဖြစ်သာ ထပ် encode လုပ်သောကြောင့်
+GPU မလိုဘဲ GitHub-hosted free runner တွင်သင့်တော်သည်။ Lip-sync၊ voice cloning နှင့်
+heavy AI upscaling မပါဝင်သေးပါ။
 
 ## Architecture
 
@@ -125,7 +141,8 @@ Main file path: app.py
 4. **Start background job** နှိပ်ပါ။
 5. Submit ပြီးကြောင်းပြလျှင် browser/phone ကိုပိတ်နိုင်သည်။
 6. ပြန်ဝင်ပြီး Dashboard မှ status ကြည့်ပါ။
-7. Completed ဖြစ်လျှင် artifact ZIP ကို download လုပ်ပါ။
+7. Completed ဖြစ်လျှင် **Load video preview** ဖြင့် browser ထဲတွင်စစ်ပါ။
+8. Preview MP4 သို့မဟုတ် artifact ZIP ကို download လုပ်ပါ။
 
 ## Model router
 

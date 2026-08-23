@@ -130,6 +130,11 @@ class GitHubActionsClient:
         # 409 = workflow သည် ထိုအချိန်တွင်ပြီးသွားပြီး cancel မလိုတော့ခြင်း။
         self._check(response, (202, 409))
 
+    def rerun(self, run_id: int) -> None:
+        """Failure ဖြစ်သော workflow ကို မူလ inputs/settings မပျောက်ဘဲ ပြန် run ရန်။"""
+        response = self.session.post(self._url(f"/actions/runs/{run_id}/rerun"), timeout=30)
+        self._check(response, (201,))
+
     def download_artifact(self, artifact_id: int) -> bytes:
         response = self.session.get(
             self._url(f"/actions/artifacts/{artifact_id}/zip"), timeout=(30, 1800), allow_redirects=True,

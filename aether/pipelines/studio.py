@@ -14,13 +14,41 @@ from ..jobs import Job, JobStore
 from ..storage import job_directory
 from ..services.gemini import GeminiService
 from ..services.media import (
-    concat_videos, duration, extract_audio, fit_audio, image_to_video, render_video, run,
+    concat_videos, create_preview, duration, extract_audio, fit_audio, image_to_video,
+    quality_report, render_video, run, video_size,
 )
-from ..services.subtitles import clean_ai_srt, distribute_text, narration_text, parse_srt, write_srt
+from ..services.subtitles import (
+    clean_ai_srt, distribute_text, narration_text, parse_srt, write_ass, write_srt,
+)
 from ..services.tts import synthesize
 
 
 Progress = Callable[[int, str], None]
+
+
+def _subtitle_canvas(video_path: Path, ratio: str) -> tuple[int, int]:
+    """ASS subtitle layout အတွက် final render canvas resolution သတ်မှတ်ရန်။"""
+    if "9:16" in ratio:
+        return 720, 1280
+    if "16:9" in ratio:
+        return 1280, 720
+    return video_size(video_path)
+
+
+def _styled_ass(items: list, srt_path: Path, video_path: Path, payload: dict) -> Path:
+    """SRT ကို download အတွက်ထားပြီး styled ASS ကို burn-in အတွက်ပြင်ရန်။"""
+    width, height = _subtitle_canvas(video_path, payload.get("ratio", "Original"))
+    return write_ass(
+        items, srt_path.with_suffix(".ass"), width=width, height=height,
+        style=payload.get("subtitle_style", {}),
+    )
+
+
+def _delivery_assets(output: Path, workdir: Path) -> tuple[Path, Path]:
+    """GitHub Artifact ထဲ preview နှင့် technical QC report ထည့်ရန်။"""
+    preview = create_preview(output, workdir / "preview.mp4")
+    report = quality_report(output, workdir / "render_report.json")
+    return preview, report
 
 
 def _resolve_input(payload: dict, workdir: Path) -> Path:
@@ -114,18 +142,22 @@ def movie_dubbing(job: Job, store: JobStore, progress: Progress) -> dict:
         store.save_checkpoint(job.id, "voice", {"path": str(fitted_voice)})
     store.ensure_not_cancelled(job.id)
 
-    progress(75, "Rendering master video")
+    ass_path = _styled_ass(subtitles, srt_path, input_video, payload)
+    progress(72, "Rendering master video")
     blur = payload.get("blur_box")
     blur_box = tuple(int(value) for value in blur) if blur else None
     output = render_video(
         input_video, fitted_voice, workdir / "final.mp4",
-        subtitle_path=srt_path if payload.get("burn_subtitles", True) else None,
+        subtitle_path=ass_path if payload.get("burn_subtitles", True) else None,
         ratio=payload.get("ratio", "9:16"), mirror=bool(payload.get("mirror")),
         color=bool(payload.get("color")), blur_box=blur_box,
         watermark=payload.get("watermark", ""),
     )
+    progress(92, "Creating mobile preview and quality report")
+    preview, report = _delivery_assets(output, workdir)
     progress(100, "Completed")
-    return {"video": str(output), "srt": str(srt_path), "script": str(script_path),
+    return {"video": str(output), "preview": str(preview), "srt": str(srt_path),
+            "ass": str(ass_path), "report": str(report), "script": str(script_path),
             "source_video": str(input_video), "audio": str(fitted_voice), "title": title, "tags": tags}
 
 
@@ -159,15 +191,20 @@ def translation(job: Job, store: JobStore, progress: Progress) -> dict:
         srt_path = write_srt(subtitles, workdir / "translated.srt")
         store.save_checkpoint(job.id, "translation", {"srt": str(srt_path), "title": title})
     store.ensure_not_cancelled(job.id)
+    subtitles = parse_srt(srt_path.read_text(encoding="utf-8-sig"), video_seconds)
+    ass_path = _styled_ass(subtitles, srt_path, input_video, payload)
     progress(70, "Rendering translated video")
     output = render_video(
         input_video, audio_path, workdir / "final.mp4",
-        subtitle_path=srt_path if payload.get("burn_subtitles", True) else None,
+        subtitle_path=ass_path if payload.get("burn_subtitles", True) else None,
         ratio=payload.get("ratio", "Original"), mirror=bool(payload.get("mirror")),
         color=bool(payload.get("color")), watermark=payload.get("watermark", ""),
     )
+    progress(92, "Creating mobile preview and quality report")
+    preview, report = _delivery_assets(output, workdir)
     progress(100, "Completed")
-    return {"video": str(output), "srt": str(srt_path), "source_video": str(input_video),
+    return {"video": str(output), "preview": str(preview), "srt": str(srt_path),
+            "ass": str(ass_path), "report": str(report), "source_video": str(input_video),
             "audio": str(audio_path), "title": title}
 
 
@@ -180,14 +217,19 @@ def rerender(job: Job, store: JobStore, progress: Progress) -> dict:
     progress(20, "Validating edited subtitles")
     items = parse_srt(payload["srt_text"], duration(input_video))
     srt_path = write_srt(items, workdir / "edited.srt")
+    ass_path = _styled_ass(items, srt_path, input_video, payload)
     store.ensure_not_cancelled(job.id)
     progress(55, "Rendering edited version")
     output = render_video(
-        input_video, audio_path, workdir / "final.mp4", subtitle_path=srt_path,
+        input_video, audio_path, workdir / "final.mp4", subtitle_path=ass_path,
         ratio=payload.get("ratio", "Original"), watermark=payload.get("watermark", ""),
     )
+    progress(90, "Creating mobile preview and quality report")
+    preview, report = _delivery_assets(output, workdir)
     progress(100, "Completed")
-    return {"video": str(output), "srt": str(srt_path), "source_video": str(input_video), "audio": str(audio_path)}
+    return {"video": str(output), "preview": str(preview), "srt": str(srt_path),
+            "ass": str(ass_path), "report": str(report),
+            "source_video": str(input_video), "audio": str(audio_path)}
 
 
 def _parse_json(raw: str) -> dict:
@@ -249,14 +291,18 @@ def _story_video(job: Job, store: JobStore, progress: Progress, epic: bool = Fal
     silent_video = concat_videos(clips, workdir / "visuals.mp4")
     subtitles = distribute_text(narration, total_seconds)
     srt_path = write_srt(subtitles, workdir / "subtitles.srt")
-    progress(85, "Rendering master video")
+    ass_path = _styled_ass(subtitles, srt_path, silent_video, payload)
+    progress(82, "Rendering master video")
     output = render_video(
         silent_video, audio_path, workdir / "final.mp4",
-        subtitle_path=srt_path if payload.get("burn_subtitles", True) else None,
+        subtitle_path=ass_path if payload.get("burn_subtitles", True) else None,
         ratio=ratio, watermark=payload.get("watermark", ""),
     )
+    progress(92, "Creating mobile preview and quality report")
+    preview, report = _delivery_assets(output, workdir)
     progress(100, "Completed")
-    return {"video": str(output), "srt": str(srt_path), "script": str(script_path),
+    return {"video": str(output), "preview": str(preview), "srt": str(srt_path),
+            "ass": str(ass_path), "report": str(report), "script": str(script_path),
             "title": plan.get("title", "AETHER Story"), "tags": plan.get("tags", "")}
 
 

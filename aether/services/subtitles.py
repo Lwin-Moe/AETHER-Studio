@@ -1,4 +1,4 @@
-"""SRT parsing, validation နှင့် စာကြောင်းအရှည်ပြုပြင်ခြင်း။"""
+"""SRT parsing, validation နှင့် မြန်မာစာတန်း ASS styling utilities။"""
 
 from __future__ import annotations
 
@@ -69,6 +69,78 @@ def write_srt(items: list[Subtitle], path: Path) -> Path:
         for index, item in enumerate(items, 1)
     )
     path.write_text(body + "\n", encoding="utf-8-sig")
+    return path
+
+
+def _ass_color(value: str, alpha: int = 0) -> str:
+    """Web #RRGGBB အရောင်ကို ASS ၏ &HAABBGGRR format သို့ပြောင်းရန်။"""
+    clean = value.strip().lstrip("#")
+    if not re.fullmatch(r"[0-9a-fA-F]{6}", clean):
+        clean = "FFFFFF"
+    red, green, blue = clean[0:2], clean[2:4], clean[4:6]
+    return f"&H{max(0, min(255, alpha)):02X}{blue}{green}{red}".upper()
+
+
+def _ass_time(seconds: float) -> str:
+    seconds = max(0.0, seconds)
+    hours = int(seconds // 3600)
+    minutes = int(seconds % 3600 // 60)
+    secs = int(seconds % 60)
+    centiseconds = int(round((seconds % 1) * 100))
+    if centiseconds == 100:
+        secs += 1
+        centiseconds = 0
+    return f"{hours}:{minutes:02d}:{secs:02d}.{centiseconds:02d}"
+
+
+def write_ass(
+    items: list[Subtitle],
+    path: Path,
+    *,
+    width: int,
+    height: int,
+    style: dict | None = None,
+) -> Path:
+    """FFmpeg/libass တွင် font၊ color၊ outline နှင့် position မှန်ကန်စေရန် ASS ရေးရန်။"""
+    style = style or {}
+    position = str(style.get("position", "Bottom"))
+    alignment = {"Top": 8, "Center": 5, "Bottom": 2}.get(position, 2)
+    font = str(style.get("font", "Noto Sans Myanmar")).replace(",", " ")
+    font_size = max(18, min(96, int(style.get("font_size", 44))))
+    primary = _ass_color(str(style.get("font_color", "#FFFFFF")))
+    outline_color = _ass_color(str(style.get("outline_color", "#000000")))
+    background = bool(style.get("background", False))
+    background_color = _ass_color(str(style.get("background_color", "#000000")), 96)
+    outline = max(0, min(10, int(style.get("outline_width", 3))))
+    shadow = max(0, min(10, int(style.get("shadow", 1))))
+    margin_v = max(12, min(300, int(style.get("margin_v", 70))))
+    border_style = 3 if background else 1
+    effective_outline = max(8, outline * 2) if background else outline
+    back_color = background_color if background else _ass_color("#000000", 128)
+
+    header = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {max(2, width)}
+PlayResY: {max(2, height)}
+ScaledBorderAndShadow: yes
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Aether,{font},{font_size},{primary},{primary},{outline_color},{back_color},-1,0,0,0,100,100,0,0,{border_style},{effective_outline},{shadow},{alignment},40,40,{margin_v},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    lines = []
+    for item in items:
+        # ASS control characters မဖြစ်စေရန် escape လုပ်ပြီး မူရင်း line break ကိုထိန်းထားသည်။
+        text = item.text.replace("\\", r"\\").replace("{", r"\{").replace("}", r"\}")
+        text = text.replace("\n", r"\N")
+        lines.append(
+            f"Dialogue: 0,{_ass_time(item.start)},{_ass_time(item.end)},Aether,,0,0,0,,{text}"
+        )
+    path.write_text(header + "\n".join(lines) + "\n", encoding="utf-8-sig")
     return path
 
 

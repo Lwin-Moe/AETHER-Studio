@@ -143,6 +143,57 @@ def render_video(
     return output_path
 
 
+def create_preview(input_path: Path, output_path: Path, width: int = 540) -> Path:
+    """Dashboard review အတွက် CPU သက်သာပြီး file size သေးသော full-length preview ထုတ်ရန်။"""
+    source_w, _ = video_size(input_path)
+    filters: list[str] = []
+    if source_w > width:
+        filters.append(f"scale={width}:-2")
+    command = [FFMPEG_BINARY, "-y", "-i", str(input_path)]
+    if filters:
+        command.extend(["-vf", ",".join(filters)])
+    command.extend([
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "30",
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "80k",
+        "-movflags", "+faststart", str(output_path),
+    ])
+    run(command)
+    return output_path
+
+
+def quality_report(video_path: Path, report_path: Path) -> Path:
+    """Final output ကို browser-compatible ဖြစ်မဖြစ် lightweight technical QC စစ်ရန်။"""
+    data = probe(video_path)
+    streams = data.get("streams", [])
+    video_stream = next((item for item in streams if item.get("codec_type") == "video"), {})
+    audio_stream = next((item for item in streams if item.get("codec_type") == "audio"), {})
+    seconds = float(data.get("format", {}).get("duration", 0) or 0)
+    size_bytes = int(data.get("format", {}).get("size", 0) or video_path.stat().st_size)
+    warnings: list[str] = []
+    if not video_stream:
+        warnings.append("Video stream မတွေ့ပါ။")
+    if not audio_stream:
+        warnings.append("Audio stream မတွေ့ပါ။")
+    if seconds <= 0:
+        warnings.append("Duration မမှန်ပါ။")
+    if video_stream.get("codec_name") != "h264":
+        warnings.append("Browser compatibility အတွက် H.264 codec မဟုတ်ပါ။")
+    if video_stream.get("pix_fmt") != "yuv420p":
+        warnings.append("Mobile compatibility အတွက် yuv420p pixel format မဟုတ်ပါ။")
+    report = {
+        "status": "PASS" if not warnings else "CHECK",
+        "duration_seconds": round(seconds, 3),
+        "size_mb": round(size_bytes / (1024 * 1024), 2),
+        "resolution": f"{video_stream.get('width', 0)}x{video_stream.get('height', 0)}",
+        "video_codec": video_stream.get("codec_name", "missing"),
+        "pixel_format": video_stream.get("pix_fmt", "unknown"),
+        "audio_codec": audio_stream.get("codec_name", "missing"),
+        "warnings": warnings,
+    }
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    return report_path
+
+
 def image_to_video(image_path: Path, seconds: float, output_path: Path, width: int, height: int) -> Path:
     frames = max(1, int(seconds * 25))
     vf = (
