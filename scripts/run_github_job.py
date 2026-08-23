@@ -12,6 +12,12 @@ from pathlib import Path
 
 import requests
 
+# `python scripts/run_github_job.py` ဖြင့်ခေါ်လျှင် repository root ကို import path
+# ထဲသေချာထည့်ပေးပြီး `aether` package မတွေ့သည့် error ကိုကာကွယ်ရန်။
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from aether.github_actions import decode_payload
 from aether.jobs import JobStore
 from aether.pipelines import PIPELINES

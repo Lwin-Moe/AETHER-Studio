@@ -43,6 +43,7 @@ jobs:
     timeout-minutes: 300
     env:
       PYTHONUNBUFFERED: "1"
+      PYTHONPATH: ${{ github.workspace }}
       AETHER_DATA_DIR: ${{ github.workspace }}/data
       AETHER_MODEL_PROFILE: ${{ vars.AETHER_MODEL_PROFILE || 'balanced' }}
       GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
@@ -79,13 +80,15 @@ jobs:
         id: pipeline
         continue-on-error: true
         run: |
+          set -o pipefail
+          mkdir -p artifacts
           python scripts/run_github_job.py \
             --job-id "$AETHER_JOB_ID" \
             --job-type "$AETHER_JOB_TYPE" \
             --job-title "$AETHER_JOB_TITLE" \
             --payload-b64 "$AETHER_PAYLOAD_B64" \
             --input-release-id "$AETHER_INPUT_RELEASE_ID" \
-            --input-asset-id "$AETHER_INPUT_ASSET_ID"
+            --input-asset-id "$AETHER_INPUT_ASSET_ID" 2>&1 | tee artifacts/runner.log
 
       - name: Upload outputs and error metadata
         if: always()
