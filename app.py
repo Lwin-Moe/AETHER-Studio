@@ -323,7 +323,7 @@ def create_page() -> None:
 
 def dashboard_page() -> None:
     hero("GitHub Job Dashboard", "GitHub Actions ပေါ်ရှိ queued, running နဲ့ completed tasks များကို စီမံပါ။")
-    st_autorefresh(interval=5000, key="github_runs_refresh")
+    # st_autorefresh(interval=5000, key="github_runs_refresh")
     try:
         runs = client.list_runs(75)
     except Exception as exc:
