@@ -135,3 +135,14 @@ class GitHubActionsClient:
             self._url(f"/actions/artifacts/{artifact_id}/zip"), timeout=(30, 1800), allow_redirects=True,
         )
         return self._check(response, (200,)).content
+
+    def artifact_download_link(self, artifact_id: int) -> str:
+        """Streamlit RAM ထဲ ZIP အကုန်မဆွဲဘဲ GitHub temporary download URL ရယူရန်။"""
+        response = self.session.get(
+            self._url(f"/actions/artifacts/{artifact_id}/zip"), timeout=30, allow_redirects=False,
+        )
+        self._check(response, (302,))
+        location = response.headers.get("Location", "")
+        if not location:
+            raise GitHubAPIError("GitHub did not return an artifact download link")
+        return location

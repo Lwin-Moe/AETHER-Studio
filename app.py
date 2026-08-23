@@ -323,13 +323,15 @@ def create_page() -> None:
 
 def dashboard_page() -> None:
     hero("GitHub Job Dashboard", "GitHub Actions ပေါ်ရှိ queued, running နဲ့ completed tasks များကို စီမံပါ။")
-    st_autorefresh(interval=5000, key="github_runs_refresh")
     try:
         runs = client.list_runs(75)
     except Exception as exc:
         st.error(f"GitHub jobs မဖတ်နိုင်ပါ: {exc}")
         return
     states = [run_state(run) for run in runs]
+    # Download link ပြင်ဆင်နေချိန် page မပြတ်စေရန် active job ရှိမှသာ auto-refresh လုပ်သည်။
+    if any(state in {"queued", "in_progress"} for state in states):
+        st_autorefresh(interval=5000, key="github_runs_refresh")
     metrics = {
         "Queued": states.count("queued"), "Running": states.count("in_progress"),
         "Completed": states.count("success"), "Failed": sum(state in {"failure", "timed_out"} for state in states),
@@ -372,15 +374,21 @@ def dashboard_page() -> None:
                     st.warning(f"Artifacts မဖတ်နိုင်ပါ: {exc}")
                     artifacts = []
                 for artifact in artifacts:
-                    key = f"artifact_{artifact['id']}"
-                    if st.button(f"Prepare download · {artifact['name']}", key=key):
-                        with st.spinner("Artifact download ပြင်ဆင်နေပါသည်..."):
-                            st.session_state[f"bytes_{key}"] = client.download_artifact(artifact["id"])
-                    if st.session_state.get(f"bytes_{key}"):
-                        st.download_button(
-                            "Download ZIP", st.session_state[f"bytes_{key}"],
-                            file_name=f"{artifact['name']}.zip", key=f"download_{key}",
+                    key = f"artifact_link_{artifact['id']}"
+                    size_mb = float(artifact.get("size_in_bytes", 0)) / (1024 * 1024)
+                    st.caption(f"{artifact['name']} · {size_mb:.1f} MB")
+                    if st.button("Generate secure download link", key=key, use_container_width=True):
+                        try:
+                            with st.spinner("GitHub download link ပြင်ဆင်နေပါသည်..."):
+                                st.session_state[key] = client.artifact_download_link(artifact["id"])
+                        except Exception as exc:
+                            st.error(f"Download link မရပါ: {exc}")
+                    if st.session_state.get(key):
+                        st.link_button(
+                            "Download output ZIP  ↓", st.session_state[key],
+                            use_container_width=True,
                         )
+                        st.caption("Temporary link ဖြစ်သောကြောင့် မရတော့လျှင် Generate ကိုထပ်နှိပ်ပါ။")
     if not runs:
         st.info("GitHub background jobs မရှိသေးပါ။")
 
