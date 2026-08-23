@@ -1,0 +1,9 @@
+.env
+.streamlit/secrets.toml
+.venv/
+__pycache__/
+*.py[cod]
+data/
+artifacts/
+github_input.*
+.DS_Store
