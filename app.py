@@ -23,10 +23,11 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Myanmar:wght@400;500;600;700&display=swap');
-    :root { --bg:#080b12;--panel:#101521;--line:#222a3b;--muted:#929db2;--purple:#7c5cff;--cyan:#38bdf8; }
-    .stApp { background:radial-gradient(circle at 52% -20%,#1a2140 0%,var(--bg) 43%);color:#eef2ff; }
+    :root { --bg:#060910;--panel:#0e1420;--panel2:#121a29;--line:#253047;--muted:#9ba9c0;--purple:#8b5cf6;--cyan:#22d3ee; }
+    .stApp { background:radial-gradient(circle at 58% -15%,#17213d 0%,var(--bg) 42%);color:#eef4ff; }
     html,body,[class*="css"] { font-family:'Inter','Noto Sans Myanmar',sans-serif; }
-    [data-testid="stSidebar"] { background:#0b0f18;border-right:1px solid var(--line); }
+    header[data-testid="stHeader"] { background:rgba(6,9,16,.82);backdrop-filter:blur(16px);border-bottom:1px solid rgba(37,48,71,.5); }
+    [data-testid="stSidebar"] { background:#080d16;border-right:1px solid var(--line); }
     [data-testid="stSidebarNav"] { display:none; }
     /* Streamlit version ပြောင်းလဲသော်လည်း label/caption စာသားများ မှောင်မသွားစေရန် */
     [data-testid="stWidgetLabel"] p,
@@ -41,29 +42,46 @@ st.markdown(
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong,
     [data-testid="stSidebar"] [data-testid="stRadio"] label p { color:#dce5f5!important;opacity:1!important; }
-    /* Light widget background ပေါ်တွင် input value ကိုဖတ်ရှုရလွယ်စေရန် */
-    input,textarea { color:#172033!important;-webkit-text-fill-color:#172033!important; }
-    input::placeholder,textarea::placeholder { color:#667085!important;-webkit-text-fill-color:#667085!important;opacity:1!important; }
+    .brand-lockup { padding:12px 8px 22px; }.brand-lockup .mark { width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#8b5cf6,#2563eb);box-shadow:0 10px 30px rgba(99,102,241,.35);font-size:1.1rem;margin-bottom:14px; }
+    .brand-lockup b { display:block;color:#f6f8ff;font-size:1.08rem;letter-spacing:.12em; }.brand-lockup small { color:#728199;font-size:.66rem;letter-spacing:.14em; }
+    [data-testid="stSidebar"] [role="radiogroup"] label { padding:9px 11px;border-radius:11px;margin:3px 0;border:1px solid transparent; }
+    [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) { background:#121c2d;border-color:#263958; }
+    .worker-chip { margin:10px 2px 18px;padding:9px 11px;border:1px solid #1f3e45;border-radius:11px;background:#0c1b20;color:#75e7d4;font-size:.72rem;font-weight:700; }
+    .worker-chip i { display:inline-block;width:7px;height:7px;border-radius:99px;background:#34d399;box-shadow:0 0 12px #34d399;margin-right:7px; }
+    /* Widget အားလုံးကို premium dark input ပုံစံတစ်မျိုးတည်းဖြစ်စေရန် */
+    [data-baseweb="base-input"],[data-baseweb="input"],
+    div[data-baseweb="select"]>div,[data-baseweb="textarea"],textarea {
+      background:#111927!important;border-color:#2a3852!important;border-radius:12px!important;box-shadow:none!important; }
+    input,textarea { color:#edf4ff!important;-webkit-text-fill-color:#edf4ff!important;caret-color:#22d3ee!important; }
+    input::placeholder,textarea::placeholder { color:#66758c!important;-webkit-text-fill-color:#66758c!important;opacity:1!important; }
     div[data-baseweb="select"] span,
-    div[data-baseweb="select"] input { color:#172033!important;-webkit-text-fill-color:#172033!important; }
-    [data-testid="stFileUploaderDropzone"] { color:#263247!important; }
+    div[data-baseweb="select"] input { color:#edf4ff!important;-webkit-text-fill-color:#edf4ff!important; }
+    [data-testid="stFileUploaderDropzone"] { background:#0d1522!important;border:1px dashed #33435f!important;color:#dbe7f8!important; }
     [data-testid="stFileUploaderDropzone"] span,
-    [data-testid="stFileUploaderDropzone"] small { color:#596579!important;opacity:1!important; }
-    .block-container { max-width:1440px;padding-top:2rem; }
+    [data-testid="stFileUploaderDropzone"] small { color:#9eabc0!important;opacity:1!important; }
+    .block-container { max-width:1260px;padding-top:2.4rem;padding-bottom:4rem; }
     h1,h2,h3 { letter-spacing:-.035em; }
-    .hero { padding:26px 30px;border:1px solid var(--line);border-radius:22px;
-      background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(56,189,248,.06));margin-bottom:20px; }
-    .hero h1 { margin:0;font-size:2.25rem }.hero p { color:var(--muted);margin:.5rem 0 0; }
+    .hero { padding:30px 34px;border:1px solid #293652;border-radius:24px;
+      background:linear-gradient(125deg,rgba(139,92,246,.18),rgba(34,211,238,.045) 70%);margin-bottom:22px;box-shadow:0 24px 80px rgba(0,0,0,.18); }
+    .hero h1 { margin:0;font-size:2.2rem }.hero p { color:#aab6ca!important;margin:.55rem 0 0; }
+    .studio-kicker { color:#69e4f5;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px; }
+    .section-title { margin:8px 0 14px;padding-bottom:10px;border-bottom:1px solid #222e43; }
+    .section-title b { color:#f4f7ff;font-size:1.02rem; }.section-title span { display:block;color:#8391a8;font-size:.76rem;margin-top:3px; }
+    .flowbar { display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 18px; }
+    .flowbar span { padding:7px 11px;border:1px solid #28354d;border-radius:999px;background:#0d1421;color:#9daac0;font-size:.72rem;font-weight:700; }
+    .flowbar span:first-child { color:#79e7f5;border-color:#27536a;background:#0c202c; }
     .metric { padding:18px;border-radius:16px;border:1px solid var(--line);background:rgba(16,21,33,.86); }
     .metric small { color:var(--muted) }.metric strong { display:block;font-size:1.65rem;margin-top:5px; }
     .status { display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.08em;padding:5px 9px;border-radius:999px; }
     .queued { background:#273047;color:#c4cce0 }.in_progress { background:#173b60;color:#7dd3fc }
     .success { background:#123d32;color:#6ee7b7 }.failure,.timed_out { background:#4b1d29;color:#fda4af }
     .cancelled { background:#3c2d20;color:#fdba74 }
-    .stButton>button,.stDownloadButton>button { border-radius:12px!important;min-height:44px;font-weight:700; }
-    .stButton>button[kind="primary"] { background:linear-gradient(135deg,#6750f5,#8b5cf6);border:0; }
-    div[data-baseweb="input"]>div,div[data-baseweb="select"]>div,textarea {
-      background:#111827!important;border-color:#293249!important;border-radius:12px!important; }
+    div[data-testid="stForm"] { background:linear-gradient(145deg,rgba(15,22,35,.96),rgba(9,14,23,.98));border:1px solid #26334a!important;border-radius:22px!important;padding:26px 26px 18px!important;box-shadow:0 24px 70px rgba(0,0,0,.22); }
+    .stButton>button,.stDownloadButton>button { border-radius:12px!important;min-height:44px;font-weight:750; }
+    .stButton>button[kind="primary"] { min-height:52px;background:linear-gradient(100deg,#7957f5,#6d5df8 48%,#227bd8);border:0;box-shadow:0 12px 28px rgba(109,93,248,.28); }
+    div[data-testid="stSegmentedControl"] button { border-color:#2b3850!important;background:#0e1624!important;color:#aebbd0!important; }
+    div[data-testid="stSegmentedControl"] button[aria-pressed="true"] { background:#1d3150!important;color:#f4f8ff!important;border-color:#3e6491!important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -157,69 +175,142 @@ def submit_job(mode: str, title: str, payload: dict, uploaded_file=None) -> str:
 
 
 def create_page() -> None:
-    hero("Create Background Job", "Task တင်ပြီးသည်နှင့် GitHub Actions က ဆက်လုပ်မည်။ Browser သို့မဟုတ် ဖုန်းပိတ်နိုင်ပါသည်။")
+    hero("Production Console", "Source ရွေး၊ creative direction သတ်မှတ်ပြီး production job ကို background worker ဆီပို့ပါ။")
     modes = {
         "movie_dubbing": "🎙️ Movie Dubbing", "translation": "🌍 Global Translation",
         "faceless": "👻 Faceless Channel", "epic": "📚 Epic Series",
         "veo": "🎥 Veo Video", "lyria": "🎵 Lyria Music",
     }
-    mode = st.selectbox("Studio mode", list(modes), format_func=modes.get)
-    project_id = st.text_input("Project ID", value=st.session_state.setdefault("project_id", uuid.uuid4().hex[:10]))
 
-    with st.form("github_job_form", clear_on_submit=False):
-        title = st.text_input("Task title", value=modes[mode].split(" ", 1)[1] + " project")
+    mode_col, project_col = st.columns([1.55, 1], gap="large")
+    mode = mode_col.selectbox("Production studio", list(modes), format_func=modes.get)
+    project_id = project_col.text_input(
+        "Project ID", value=st.session_state.setdefault("project_id", uuid.uuid4().hex[:10]),
+        help="Job များကို project တစ်ခုအဖြစ်စုစည်းရန် ID ဖြစ်သည်။",
+    )
+
+    # Form အပြင်ထားမှ source ရွေးချိန်တွင် URL/Upload field ချက်ချင်းပြောင်းပေးနိုင်သည်။
+    source = None
+    if mode in {"movie_dubbing", "translation"}:
+        source = st.segmented_control(
+            "Source delivery",
+            ["Upload video", "Paste video URL"],
+            default="Upload video",
+            key=f"source_delivery_{mode}",
+        )
+
+    tts_engine = "Edge-TTS · Free"
+    if mode in {"movie_dubbing", "faceless", "epic"}:
+        tts_engine = st.segmented_control(
+            "Voice engine",
+            ["Edge-TTS · Free", "Google Synergy · Gemini", "ElevenLabs · Premium", "TTSMaker · Pro API"],
+            default="Edge-TTS · Free", key=f"tts_engine_{mode}",
+        )
+
+    st.markdown(
+        '<div class="flowbar"><span>01 · SOURCE</span><span>02 · CREATIVE</span>'
+        '<span>03 · OUTPUT</span><span>04 · BACKGROUND RENDER</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.form(f"github_job_form_{mode}", clear_on_submit=False):
         payload: dict = {"project_id": project_id}
         uploaded = None
+        left, right = st.columns([1.35, 1], gap="large")
 
-        if mode in {"movie_dubbing", "translation"}:
-            source = st.radio("Video source", ["Phone / Computer Upload", "Public Video URL"], horizontal=True)
-            if source == "Phone / Computer Upload":
-                uploaded = st.file_uploader("MP4 / WEBM / MOV", type=["mp4", "webm", "mov", "m4v"])
-                st.caption(f"အများဆုံး {MAX_UPLOAD_MB} MB · GitHub draft release တွင်ယာယီထားပြီး worker ပြီးချိန် ဖျက်မည်။")
+        with left:
+            st.markdown('<div class="section-title"><b>Source & Creative Direction</b><span>Input media နဲ့ AI ရေးသားမည့်ပုံစံ</span></div>', unsafe_allow_html=True)
+            title = st.text_input("Production title", value=modes[mode].split(" ", 1)[1] + " · New project")
+
+            if mode in {"movie_dubbing", "translation"}:
+                if source == "Upload video":
+                    uploaded = st.file_uploader("Upload source video", type=["mp4", "webm", "mov", "m4v"])
+                    st.caption("MP4 / MOV / WEBM · Streamlit ပြသသည့် file limit အတွင်း · worker ပြီးချိန် temporary source ကိုဖျက်မည်။")
+                else:
+                    payload["video_url"] = st.text_input(
+                        "Public video URL",
+                        placeholder="https://youtube.com/...  or  https://www.tiktok.com/...",
+                        help="Login မလိုသော public YouTube, TikTok သို့မဟုတ် direct video URL ထည့်ပါ။",
+                    )
+
+            if mode == "movie_dubbing":
+                payload["mode"] = st.selectbox("Narrative treatment", ["Translate Original", "Original AI Story"])
+                payload["style"] = st.selectbox("Script personality", ["Natural and cinematic", "Gen-Z / Slang", "Comedy", "Suspense"])
+            elif mode == "translation":
+                payload["target_language"] = st.selectbox("Target language", ["Myanmar", "English", "Thai", "Bahasa Indonesia"])
+                payload["style"] = st.selectbox("Translation personality", ["Natural conversational", "Gen-Z / Slang", "Formal / Direct"])
+                payload["dictionary"] = st.text_area("Term dictionary · optional", placeholder="Gojo=ဂိုဂျို\nOppa=အိုပါး", height=105)
+            elif mode in {"faceless", "epic"}:
+                payload["topic"] = st.text_area("Story brief / episode focus", height=150, placeholder="Audience၊ hook၊ story angle နဲ့ မဖြစ်မနေပါရမည့်အချက်များ...")
+                if mode == "faceless":
+                    payload["niche"] = st.selectbox("Channel niche", ["Horror", "Reddit Drama", "Dark Psychology", "Fun Facts", "Motivation", "Ancient History"])
+                else:
+                    payload["character_bible"] = st.text_area("Character bible", height=125, placeholder="Character name, appearance, personality, continuity rules...")
             else:
-                payload["video_url"] = st.text_input("Video URL")
+                payload["prompt"] = st.text_area("Generation brief", height=230, placeholder="Scene၊ mood၊ camera၊ lighting၊ sound နဲ့ visual details များရေးပါ...")
 
-        if mode == "movie_dubbing":
-            payload["mode"] = st.selectbox("Recap mode", ["Translate Original", "Original AI Story"])
-            payload["style"] = st.selectbox("Script style", ["Natural and cinematic", "Gen-Z / Slang", "Comedy", "Suspense"])
-            payload["voice"] = st.selectbox("Narrator voice", ["Myanmar Male", "Myanmar Female"])
-            payload["voice_rate"] = st.select_slider("Voice speed", ["-10%", "-5%", "+0%", "+5%", "+10%"], value="+0%")
-        elif mode == "translation":
-            payload["target_language"] = st.selectbox("Target language", ["Myanmar", "English", "Thai", "Bahasa Indonesia"])
-            payload["style"] = st.selectbox("Translation style", ["Natural conversational", "Gen-Z / Slang", "Formal / Direct"])
-            payload["dictionary"] = st.text_area("Custom dictionary", placeholder="Gojo=ဂိုဂျို\nOppa=အိုပါး")
-        elif mode in {"faceless", "epic"}:
-            payload["topic"] = st.text_area("Topic / Episode focus", height=120)
-            if mode == "faceless":
-                payload["niche"] = st.selectbox("Niche", ["Horror", "Reddit Drama", "Dark Psychology", "Fun Facts", "Motivation", "Ancient History"])
+        with right:
+            st.markdown('<div class="section-title"><b>Output Specification</b><span>Delivery format၊ narration နဲ့ branding</span></div>', unsafe_allow_html=True)
+            if mode in {"movie_dubbing", "faceless", "epic"}:
+                payload["tts_engine"] = tts_engine
+                if tts_engine.startswith("Google"):
+                    voice_options = ["Synergy Puck · Male", "Synergy Aoede · Female", "Synergy Charon · Deep", "Synergy Kore · Clear"]
+                elif tts_engine.startswith("ElevenLabs"):
+                    voice_options = ["Adam · Deep", "Rachel · Female", "Custom Voice ID"]
+                elif tts_engine.startswith("TTSMaker"):
+                    voice_options = ["TTSMaker custom voice"]
+                else:
+                    voice_options = ["ဇော်ဇော် · Male", "အောင်အောင် · Deep", "နှင်းနှင်း · Female"]
+                payload["voice"] = st.selectbox("Narrator voice", voice_options)
+                if tts_engine.startswith("ElevenLabs") and payload["voice"] == "Custom Voice ID":
+                    payload["tts_voice_id"] = st.text_input("ElevenLabs Voice ID", placeholder="Your voice_id")
+                elif tts_engine.startswith("TTSMaker"):
+                    payload["tts_voice_id"] = st.text_input("TTSMaker Voice ID", placeholder="ဥပမာ 777")
+                if tts_engine.startswith("Google"):
+                    st.caption("ရှိပြီးသား GEMINI_API_KEYS ကိုအသုံးပြုမည်။")
+                elif tts_engine.startswith("ElevenLabs"):
+                    st.caption("GitHub Secret: ELEVENLABS_API_KEY လိုအပ်သည်။")
+                elif tts_engine.startswith("TTSMaker"):
+                    st.caption("GitHub Secret: TTSMAKER_API_KEY · Pro/Studio API plan လိုအပ်သည်။")
+            if mode in {"movie_dubbing", "faceless", "epic"}:
+                payload["voice_rate"] = st.select_slider("Voice pacing", ["-10%", "-5%", "+0%", "+5%", "+10%"], value="+0%")
+            if mode in {"faceless", "epic"}:
+                payload["duration_minutes"] = st.slider("Target duration · minutes", 1, 10, 2)
+
+            if mode not in {"veo", "lyria"}:
+                payload["ratio"] = st.selectbox("Master aspect ratio", ["9:16", "16:9", "Original"])
+                payload["burn_subtitles"] = st.toggle("Burn subtitles into video", True)
+                payload["watermark"] = st.text_input("Watermark · optional", placeholder="@channelname")
+                st.info("Output ကို GitHub Artifact ZIP အဖြစ် 14 ရက်သိမ်းမည်။")
             else:
-                payload["character_bible"] = st.text_area("Character Bible", height=150)
-            payload["duration_minutes"] = st.slider("Duration (minutes)", 1, 10, 2)
-            payload["voice"] = st.selectbox("Narrator voice", ["Myanmar Male", "Myanmar Female"])
-        else:
-            payload["prompt"] = st.text_area("Generation prompt", height=160)
+                profile = secret("AETHER_MODEL_PROFILE", "balanced")
+                model_key = "video" if mode == "veo" else "music"
+                model_name = MODEL_PRESETS.get(profile, MODEL_PRESETS["balanced"])[model_key]
+                st.text_input("Active generation model", value=model_name, disabled=True)
+                st.info("Generation availability သည် API account access နဲ့ region ပေါ်မူတည်သည်။")
 
-        if mode not in {"veo", "lyria"}:
-            c1, c2, c3 = st.columns(3)
-            payload["ratio"] = c1.selectbox("Ratio", ["9:16", "16:9", "Original"])
-            payload["burn_subtitles"] = c2.checkbox("Burn subtitles", True)
-            payload["watermark"] = c3.text_input("Watermark")
-
-        submitted = st.form_submit_button("Start background job", type="primary", use_container_width=True)
+        st.divider()
+        submitted = st.form_submit_button("Launch background production  →", type="primary", use_container_width=True)
 
     if submitted:
         if mode in {"movie_dubbing", "translation"}:
-            if source == "Phone / Computer Upload" and uploaded is None:
+            if source == "Upload video" and uploaded is None:
                 st.error("Video file တင်ပေးပါ။")
                 return
             if uploaded is not None and uploaded.size > MAX_UPLOAD_MB * 1024 * 1024:
                 st.error(f"Video file သည် {MAX_UPLOAD_MB} MB ထက်ကြီးနေပါသည်။ Compress သို့မဟုတ် အပိုင်းခွဲပြီးတင်ပါ။")
                 return
-            if source == "Public Video URL" and not payload.get("video_url", "").strip():
+            if source == "Paste video URL" and not payload.get("video_url", "").strip():
                 st.error("Video URL ထည့်ပေးပါ။")
                 return
         if mode in {"faceless", "epic", "veo", "lyria"} and not str(payload.get("topic") or payload.get("prompt") or "").strip():
             st.error("Topic သို့မဟုတ် prompt ထည့်ပေးပါ။")
+            return
+        if mode in {"movie_dubbing", "faceless", "epic"} and (
+            tts_engine.startswith("TTSMaker")
+            or (tts_engine.startswith("ElevenLabs") and payload.get("voice") == "Custom Voice ID")
+        ) and not payload.get("tts_voice_id", "").strip():
+            st.error("ရွေးထားသော TTS engine အတွက် Voice ID ထည့်ပေးပါ။")
             return
         try:
             with st.spinner("GitHub background worker ဆီ task တင်နေပါသည်..."):
@@ -304,11 +395,16 @@ def settings_page() -> None:
 
 
 with st.sidebar:
-    st.markdown("## ✦ AETHER\n**GITHUB EDITION**")
-    page = st.radio("Workspace", ["Dashboard", "Create Studio", "Settings"], label_visibility="collapsed")
+    st.markdown(
+        '<div class="brand-lockup"><div class="mark">✦</div><b>AETHER</b>'
+        '<small>AUTONOMOUS MEDIA OS · BUILD 54 PRO</small></div>', unsafe_allow_html=True,
+    )
+    nav_labels = {"Dashboard": "◫  Operations", "Create Studio": "✦  Production", "Settings": "⚙  System"}
+    page = st.radio("Workspace", list(nav_labels), format_func=nav_labels.get, label_visibility="collapsed")
     st.divider()
-    st.caption("Streamlit UI · GitHub Actions Worker")
-    if st.button("Lock studio"):
+    st.markdown('<div class="worker-chip"><i></i>GITHUB WORKER READY</div>', unsafe_allow_html=True)
+    st.caption("Detached processing · Safe to close")
+    if st.button("Lock workspace", use_container_width=True):
         st.session_state.authenticated = False
         st.rerun()
 

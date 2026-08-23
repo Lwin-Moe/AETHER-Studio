@@ -47,6 +47,8 @@ jobs:
       AETHER_MODEL_PROFILE: ${{ vars.AETHER_MODEL_PROFILE || 'balanced' }}
       GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
       GROQ_API_KEYS: ${{ secrets.GROQ_API_KEYS }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      TTSMAKER_API_KEY: ${{ secrets.TTSMAKER_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       AETHER_JOB_ID: ${{ inputs.job_id }}
       AETHER_JOB_TYPE: ${{ inputs.job_type }}

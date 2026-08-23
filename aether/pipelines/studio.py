@@ -103,9 +103,12 @@ def movie_dubbing(job: Job, store: JobStore, progress: Progress) -> dict:
         fitted_voice = Path(voice_checkpoint["path"])
     else:
         progress(50, "Generating narration")
+        tts_engine = payload.get("tts_engine", "Edge-TTS · Free")
+        voice_suffix = ".wav" if tts_engine.startswith("Google") else ".mp3"
         raw_voice = synthesize(
-            narration_text(subtitles), workdir / "voice_raw.mp3",
+            narration_text(subtitles), workdir / f"voice_raw{voice_suffix}",
             voice=payload.get("voice", "Myanmar Male"), rate=payload.get("voice_rate", "+0%"),
+            engine=tts_engine, custom_voice_id=payload.get("tts_voice_id", ""),
         )
         fitted_voice = fit_audio(raw_voice, video_seconds, workdir / "voice_fitted.wav")
         store.save_checkpoint(job.id, "voice", {"path": str(fitted_voice)})
@@ -221,9 +224,15 @@ def _story_video(job: Job, store: JobStore, progress: Progress, epic: bool = Fal
     store.ensure_not_cancelled(job.id)
 
     progress(30, "Generating narration")
-    audio_path = workdir / "narration.mp3"
+    tts_engine = payload.get("tts_engine", "Edge-TTS · Free")
+    voice_suffix = ".wav" if tts_engine.startswith("Google") else ".mp3"
+    audio_path = workdir / f"narration{voice_suffix}"
     if not audio_path.exists():
-        synthesize(narration, audio_path, voice=payload.get("voice", "Myanmar Male"))
+        synthesize(
+            narration, audio_path, voice=payload.get("voice", "Myanmar Male"),
+            rate=payload.get("voice_rate", "+0%"), engine=tts_engine,
+            custom_voice_id=payload.get("tts_voice_id", ""),
+        )
     total_seconds = duration(audio_path); each_seconds = total_seconds / len(scenes)
     ratio = payload.get("ratio", "9:16"); width, height = ((720, 1280) if "9:16" in ratio else (1280, 720))
     clips: list[Path] = []

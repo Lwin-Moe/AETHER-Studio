@@ -60,7 +60,13 @@ GitHub repository → **Settings → Secrets and variables → Actions** တွ�
 ```text
 GEMINI_API_KEYS = key1,key2
 GROQ_API_KEYS   = optional-groq-key
+ELEVENLABS_API_KEY = optional-elevenlabs-key
+TTSMAKER_API_KEY   = optional-ttsmaker-pro-key
 ```
+
+Edge-TTS နှင့် Google Synergy သာသုံးမည်ဆိုလျှင် နောက်ဆုံး optional key နှစ်ခု
+မလိုပါ။ Google Synergy သည် `GEMINI_API_KEYS` ကိုအသုံးပြုသည်။ TTSMaker API သည်
+Free website plan မဟုတ်ဘဲ API ပါသော Pro/Studio plan လိုအပ်သည်။
 
 ထည့်ပါ။ `AETHER_MODEL_PROFILE` ကို Actions Variable အဖြစ် `balanced`, `quality`
 သို့မဟုတ် `economy` သတ်မှတ်နိုင်သည်။ Default သည် `balanced` ဖြစ်သည်။
