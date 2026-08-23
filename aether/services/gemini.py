@@ -27,25 +27,25 @@ class GeminiService:
         model_tasks = (task,) + tuple(item for item in fallback_tasks if item != task)
         errors: list[str] = []
         for model_task in model_tasks:
-            model = settings.models[model_task]
-            for key_index, key in enumerate(settings.gemini_keys):
-                for attempt in range(settings.max_attempts):
-                    try:
-                        response = self._client(key).models.generate_content(model=model, contents=prompt)
-                        text = (response.text or "").strip()
-                        if not text:
-                            raise RuntimeError("Gemini returned empty text")
-                        return text
-                    except Exception as exc:
-                        errors.append(f"{model}/key-{key_index + 1}: {exc}")
-                        if any(code in str(exc) for code in ("429", "503", "504", "timeout", "Timeout")):
-                            time.sleep(min(30, (2 ** attempt) + random.random()))
-                            continue
-                        break
+            for model in settings.model_candidates(model_task):
+                for key_index, key in enumerate(settings.gemini_keys):
+                    for attempt in range(min(2, settings.max_attempts)):
+                        try:
+                            response = self._client(key).models.generate_content(model=model, contents=prompt)
+                            text = (response.text or "").strip()
+                            if not text:
+                                raise RuntimeError("Gemini returned empty text")
+                            return text
+                        except Exception as exc:
+                            errors.append(f"{model}/key-{key_index + 1}: {exc}")
+                            if any(code in str(exc) for code in ("429", "503", "504", "timeout", "Timeout")):
+                                time.sleep(min(12, (2 ** attempt) + random.random()))
+                                continue
+                            break
         raise RuntimeError("All Gemini attempts failed: " + " | ".join(errors[-4:]))
 
     def generate_from_media(self, media_path: Path, prompt: str, task: str = "text") -> str:
-        """Upload/processing နှင့် model call ကို deadline ဖြင့်ထိန်းချုပ်ရန်။"""
+        """Media ကိုတစ်ခါ upload ပြီး key + stable model fallback ဖြင့်ခေါ်ရန်။"""
         errors: list[str] = []
         for key_index, key in enumerate(settings.gemini_keys):
             client = self._client(key)
@@ -64,22 +64,35 @@ class GeminiService:
                     if time.monotonic() >= deadline:
                         raise TimeoutError("Gemini media processing timed out")
                     time.sleep(2)
-                response = client.models.generate_content(
-                    model=settings.models[task], contents=[media_file, prompt]
-                )
-                text = (response.text or "").strip()
-                if not text:
-                    raise RuntimeError("Gemini returned empty text")
-                return text
+                # Upload တစ်ခါတည်းကို model များစွာဖြင့်စမ်းပြီး 503 high-demand ကိုရှောင်သည်။
+                for model in settings.model_candidates(task):
+                    for attempt in range(min(2, settings.max_attempts)):
+                        try:
+                            response = client.models.generate_content(
+                                model=model, contents=[media_file, prompt]
+                            )
+                            text = (response.text or "").strip()
+                            if not text:
+                                raise RuntimeError("Gemini returned empty text")
+                            return text
+                        except Exception as exc:
+                            errors.append(f"{model}/key-{key_index + 1}: {exc}")
+                            transient = any(
+                                code in str(exc) for code in ("429", "503", "504", "timeout", "Timeout")
+                            )
+                            if transient and attempt == 0:
+                                time.sleep(min(12, 2 + random.random() * 2))
+                                continue
+                            break
             except Exception as exc:
-                errors.append(f"key-{key_index + 1}: {exc}")
+                errors.append(f"upload/key-{key_index + 1}: {exc}")
             finally:
                 if media_file is not None:
                     try:
                         client.files.delete(name=media_file.name)
                     except Exception:
                         pass
-        raise RuntimeError("Gemini media request failed: " + " | ".join(errors[-3:]))
+        raise RuntimeError("Gemini media request failed after model/key fallbacks: " + " | ".join(errors[-8:]))
 
     def generate_image(self, prompt: str, output: Path, width: int = 720, height: int = 1280) -> Path:
         """Gemini image ကိုအရင်သုံးပြီး Pollinations ကို free fallback အဖြစ်ထားရန်။"""

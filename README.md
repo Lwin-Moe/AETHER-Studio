@@ -1,4 +1,4 @@
-# AETHER FILMWORKS · GitHub + Streamlit Edition · Build 55.3 Pro
+# AETHER FILMWORKS · GitHub + Streamlit Edition · Build 55.4 Pro
 
 Streamlit Community Cloud ကို clean UI အဖြစ်အသုံးပြုပြီး GitHub Actions ကို
 detached background video worker အဖြစ်အသုံးပြုထားသော AETHER Studio ဖြစ်သည်။
@@ -31,6 +31,7 @@ detached background video worker အဖြစ်အသုံးပြုထာ�
 - Source video ကို output Artifact ထဲထပ်မထည့်ဘဲ GitHub storage/file size လျှော့ခြင်း
 - Streamlit artifact download widget/session key collision ပြင်ဆင်ခြင်း
 - Preview မရှိသော failed job မှ `metadata.json` နှင့် traceback ကို Dashboard တွင်ဖတ်ပြခြင်း
+- Gemini 503 high-demand ဖြစ်လျှင် stable media models နှင့် API keys ကိုအလိုအလျောက် fallback လုပ်ခြင်း
 
 Preview သည် final video ကို 540px wide H.264 proxy အဖြစ်သာ ထပ် encode လုပ်သောကြောင့်
 GPU မလိုဘဲ GitHub-hosted free runner တွင်သင့်တော်သည်။ Lip-sync၊ voice cloning နှင့်

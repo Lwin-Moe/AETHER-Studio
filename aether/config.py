@@ -23,10 +23,10 @@ FFPROBE_BINARY = os.getenv("FFPROBE_BINARY", "ffprobe")
 
 MODEL_PRESETS = {
     "balanced": {
-        "text": "gemini-3.7-flash",
-        "reasoning": "gemini-3.1-pro-preview",
-        "image": "gemini-3.1-flash-image",
-        "tts": "gemini-3.1-flash-tts-preview",
+        "text": "gemini-2.5-flash",
+        "reasoning": "gemini-2.5-pro",
+        "image": "gemini-2.5-flash-image",
+        "tts": "gemini-2.5-flash-preview-tts",
         "video": "veo-3.1-fast-generate-preview",
         "music": "lyria-3-pro-preview",
     },
@@ -39,13 +39,20 @@ MODEL_PRESETS = {
         "music": "lyria-3-pro-preview",
     },
     "economy": {
-        "text": "gemini-3.1-flash-lite",
-        "reasoning": "gemini-3.7-flash",
+        "text": "gemini-2.5-flash-lite",
+        "reasoning": "gemini-2.5-flash",
         "image": "gemini-3.1-flash-lite-image",
         "tts": "gemini-2.5-flash-preview-tts",
         "video": "veo-3.1-lite-generate-preview",
         "music": "lyria-3-clip-preview",
     },
+}
+
+# Media transcription/translation အတွက် preview model high-demand ဖြစ်လျှင်
+# stable public aliases/models သို့ အလိုအလျောက်ပြောင်းရန် စဉ်ထားခြင်း။
+MODEL_FALLBACKS = {
+    "text": ("gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"),
+    "reasoning": ("gemini-2.5-pro", "gemini-2.5-flash", "gemini-flash-latest"),
 }
 
 
@@ -63,6 +70,12 @@ class Settings:
     @property
     def models(self) -> dict[str, str]:
         return MODEL_PRESETS.get(self.model_profile, MODEL_PRESETS["balanced"])
+
+    def model_candidates(self, task: str) -> list[str]:
+        """Primary model ကိုဦးစားပေးပြီး duplicate မပါသော fallback list ပြန်ပေးရန်။"""
+        primary = self.models.get(task, self.models["text"])
+        candidates = [primary, *MODEL_FALLBACKS.get(task, MODEL_FALLBACKS["text"])]
+        return list(dict.fromkeys(candidates))
 
     @property
     def gemini_keys(self) -> list[str]:
