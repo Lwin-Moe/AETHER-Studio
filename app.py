@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hmac
 import io
+import json
 import uuid
 import zipfile
 from pathlib import Path
@@ -145,6 +146,7 @@ SUBTITLE_PRESETS = {
     "Gold Cinematic": {"font": "Noto Serif Myanmar", "font_size": 46, "font_color": "#FFD76A", "outline_color": "#160F02", "outline_width": 3, "shadow": 2, "position": "Bottom", "background": False, "background_color": "#000000", "margin_v": 74},
     "Shorts Bold": {"font": "Noto Sans Myanmar", "font_size": 54, "font_color": "#FFFFFF", "outline_color": "#111827", "outline_width": 5, "shadow": 1, "position": "Center", "background": False, "background_color": "#000000", "margin_v": 60},
     "Readable Box": {"font": "Noto Sans Myanmar", "font_size": 42, "font_color": "#FFFFFF", "outline_color": "#000000", "outline_width": 2, "shadow": 0, "position": "Bottom", "background": True, "background_color": "#000000", "margin_v": 64},
+    "Padauk Classic": {"font": "Padauk", "font_size": 46, "font_color": "#FFFFFF", "outline_color": "#111111", "outline_width": 3, "shadow": 1, "position": "Bottom", "background": False, "background_color": "#000000", "margin_v": 72},
 }
 
 
@@ -192,8 +194,8 @@ def submit_job(mode: str, title: str, payload: dict, uploaded_file=None) -> str:
         raise
 
 
-def artifact_preview(artifact_id: int) -> tuple[bytes, str]:
-    """Artifact ZIP ကိုတစ်ခါသာဆွဲပြီး lightweight preview MP4 ကို RAM ထဲထုတ်ရန်။"""
+def artifact_preview(artifact_id: int) -> tuple[bytes, str, dict]:
+    """Artifact ZIP မှ preview MP4 နှင့် success/failure metadata ကိုတစ်ခါတည်းဖတ်ရန်။"""
     archive = client.download_artifact(artifact_id)
     with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
         names = bundle.namelist()
@@ -203,7 +205,9 @@ def artifact_preview(artifact_id: int) -> tuple[bytes, str]:
         if not preview_name:
             raise RuntimeError("Artifact ထဲတွင် preview/final MP4 မတွေ့ပါ။ Build အသစ်ဖြင့် job ပြန် run ပါ။")
         data = bundle.read(preview_name)
-    return data, Path(preview_name).name
+        metadata_name = next((name for name in names if name.lower().endswith("metadata.json")), "")
+        metadata = json.loads(bundle.read(metadata_name).decode("utf-8")) if metadata_name else {}
+    return data, Path(preview_name).name, metadata
 
 
 def create_page() -> None:
@@ -330,8 +334,8 @@ def create_page() -> None:
                         "preset": subtitle_preset,
                         "font": st.selectbox(
                             "Myanmar font",
-                            ["Noto Sans Myanmar", "Noto Serif Myanmar", "Noto Sans", "Noto Serif"],
-                            index=["Noto Sans Myanmar", "Noto Serif Myanmar", "Noto Sans", "Noto Serif"].index(base_style["font"]),
+                            ["Noto Sans Myanmar", "Noto Serif Myanmar", "Padauk", "Padauk Book", "Noto Sans", "Noto Serif"],
+                            index=["Noto Sans Myanmar", "Noto Serif Myanmar", "Padauk", "Padauk Book", "Noto Sans", "Noto Serif"].index(base_style["font"]),
                         ),
                         "font_size": st.slider("Font size", 24, 76, int(base_style["font_size"]), 2),
                         "position": st.selectbox(
@@ -459,14 +463,20 @@ def dashboard_page() -> None:
                     if preview_col.button("▶ Load video preview", key=f"load_{preview_key}", use_container_width=True):
                         try:
                             with st.spinner("Preview ကို Artifact မှဖတ်နေပါသည်..."):
-                                preview_bytes, preview_name = artifact_preview(int(artifact["id"]))
+                                preview_bytes, preview_name, preview_metadata = artifact_preview(int(artifact["id"]))
                                 st.session_state[preview_key] = {
                                     "bytes": preview_bytes, "name": preview_name,
+                                    "metadata": preview_metadata,
                                 }
                         except Exception as exc:
                             st.error(f"Preview မဖွင့်နိုင်ပါ: {exc}")
                     preview_data = st.session_state.get(preview_key)
                     if preview_data:
+                        preview_metadata = preview_data.get("metadata", {})
+                        if preview_metadata.get("status") == "FAILED":
+                            st.error(f"Worker error: {preview_metadata.get('error', 'Unknown error')}")
+                        elif preview_metadata.get("status") == "COMPLETED":
+                            st.success("Worker metadata: completed")
                         st.markdown('<div class="preview-shell">', unsafe_allow_html=True)
                         st.video(preview_data["bytes"], format="video/mp4")
                         st.download_button(
@@ -513,7 +523,7 @@ def settings_page() -> None:
 with st.sidebar:
     st.markdown(
         '<div class="brand-lockup"><div class="mark">✦</div><b>AETHER</b>'
-        '<small>AUTONOMOUS MEDIA OS · BUILD 55.1 PRO</small></div>', unsafe_allow_html=True,
+        '<small>AUTONOMOUS MEDIA OS · BUILD 55.2 PRO</small></div>', unsafe_allow_html=True,
     )
     nav_labels = {"Dashboard": "◫  Operations", "Create Studio": "✦  Production", "Settings": "⚙  System"}
     page = st.radio("Workspace", list(nav_labels), format_func=nav_labels.get, label_visibility="collapsed")

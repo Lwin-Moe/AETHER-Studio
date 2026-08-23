@@ -58,22 +58,41 @@ def delete_temporary_release(repository: str, token: str, release_id: str, job_i
 
 
 def collect_results(result: dict, output_dir: Path) -> dict:
-    """Pipeline output paths ကို artifact folder ထဲ copy လုပ်ရန်။"""
+    """Pipeline output များကို artifact folder ထဲ copy လုပ်ပြီး optional asset error ကို warning အဖြစ်ထားရန်။"""
     output_dir.mkdir(parents=True, exist_ok=True)
     public_result: dict = {}
     copied_names: set[str] = set()
+    warnings: list[str] = []
     for key, value in result.items():
-        if isinstance(value, str) and Path(value).is_file():
-            source = Path(value)
-            name = source.name
-            if name in copied_names:
-                name = f"{key}_{name}"
-            copied_names.add(name)
-            destination = output_dir / name
+        # Source video က final/preview ထဲရှိပြီးသားဖြစ်သောကြောင့် Artifact size နှင့်
+        # GitHub storage မတိုးစေရန် မိတ္တူထပ်မထည့်ပါ။
+        if key == "source_video":
+            public_result[key] = "excluded-from-artifact"
+            continue
+        try:
+            is_file = isinstance(value, str) and Path(value).is_file()
+        except OSError:
+            is_file = False
+        if not is_file:
+            public_result[key] = value
+            continue
+        source = Path(value)
+        name = source.name
+        if name in copied_names:
+            name = f"{key}_{name}"
+        copied_names.add(name)
+        destination = output_dir / name
+        try:
             shutil.copy2(source, destination)
             public_result[key] = name
-        else:
-            public_result[key] = value
+        except Exception as exc:
+            # Final video မကူးနိုင်လျှင် success ဟုမပြဘဲ ချက်ချင်း fail စေသည်။
+            if key == "video":
+                raise
+            warnings.append(f"Optional output {key} copy failed: {type(exc).__name__}: {exc}")
+            public_result[key] = "copy-failed"
+    if warnings:
+        public_result["warnings"] = warnings
     return public_result
 
 
