@@ -43,6 +43,7 @@ jobs:
     timeout-minutes: 300
     env:
       PYTHONUNBUFFERED: "1"
+      PYTHONPATH: ${{ github.workspace }}
       AETHER_DATA_DIR: ${{ github.workspace }}/data
       AETHER_MODEL_PROFILE: ${{ vars.AETHER_MODEL_PROFILE || 'balanced' }}
       GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
