@@ -61,18 +61,46 @@ def _resolve_input(payload: dict, workdir: Path) -> Path:
         shutil.copy2(source, destination)
         return destination
     if payload.get("video_url"):
-        destination = workdir / "input.mp4"
         try:
             import yt_dlp
         except ImportError as exc:
             raise RuntimeError("yt-dlp is required for URL downloads") from exc
-        options = {
-            "outtmpl": str(destination), "format": "bv*[height<=1080]+ba/b[height<=1080]",
-            "merge_output_format": "mp4", "noplaylist": True, "socket_timeout": 30,
+        # Xiaohongshu/TikTok တချို့က height metadata မပေးသောကြောင့်
+        # `[height<=1080]` selector တစ်မျိုးတည်းသုံးလျှင် available format ကိုပါ
+        # ပယ်ထုတ်မိနိုင်သည်။ Quality-first → universal best fallback အဆင့်လိုက်စမ်းသည်။
+        output_template = str(workdir / "url_input.%(ext)s")
+        common_options = {
+            "outtmpl": output_template,
+            "merge_output_format": "mp4",
+            "noplaylist": True,
+            "socket_timeout": 30,
+            "retries": 3,
+            "fragment_retries": 3,
+            "format_sort": ["res:1080", "ext:mp4:m4a"],
         }
-        with yt_dlp.YoutubeDL(options) as downloader:
-            downloader.download([payload["video_url"]])
-        return destination
+        selectors = [
+            "bv*[height<=1080]+ba/b[height<=1080]/best",
+            "bv*+ba/best",
+            "best",
+        ]
+        last_error: Exception | None = None
+        for selector in selectors:
+            try:
+                options = {**common_options, "format": selector}
+                with yt_dlp.YoutubeDL(options) as downloader:
+                    downloader.download([payload["video_url"]])
+                candidates = [
+                    path for path in workdir.glob("url_input.*")
+                    if path.is_file() and path.suffix.lower() not in {".part", ".ytdl", ".json"}
+                ]
+                # Merge ပြီးသား MP4 ကိုဦးစားပေးပြီး နောက်ဆုံးရေးထားသော media file ကိုယူသည်။
+                candidates.sort(key=lambda path: (path.suffix.lower() == ".mp4", path.stat().st_mtime), reverse=True)
+                if candidates:
+                    return candidates[0]
+                last_error = RuntimeError("yt-dlp completed but no media file was created")
+            except Exception as exc:
+                last_error = exc
+        raise RuntimeError(f"Public video URL download failed after format fallbacks: {last_error}")
     raise ValueError("input_path or video_url is required")
 
 

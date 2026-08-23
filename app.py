@@ -513,7 +513,7 @@ def settings_page() -> None:
 with st.sidebar:
     st.markdown(
         '<div class="brand-lockup"><div class="mark">✦</div><b>AETHER</b>'
-        '<small>AUTONOMOUS MEDIA OS · BUILD 55 PRO</small></div>', unsafe_allow_html=True,
+        '<small>AUTONOMOUS MEDIA OS · BUILD 55.1 PRO</small></div>', unsafe_allow_html=True,
     )
     nav_labels = {"Dashboard": "◫  Operations", "Create Studio": "✦  Production", "Settings": "⚙  System"}
     page = st.radio("Workspace", list(nav_labels), format_func=nav_labels.get, label_visibility="collapsed")
