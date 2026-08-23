@@ -1,0 +1,44 @@
+name: AETHER Temporary Upload Cleanup
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete stale AETHER draft releases
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            const cutoff = Date.now() - 12 * 60 * 60 * 1000;
+            for (const release of releases) {
+              const stale = release.draft
+                && release.tag_name.startsWith('aether-input-')
+                && new Date(release.created_at).getTime() < cutoff;
+              if (!stale) continue;
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+              });
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`,
+                });
+              } catch (error) {
+                core.info(`Tag cleanup skipped: ${error.message}`);
+              }
+            }
