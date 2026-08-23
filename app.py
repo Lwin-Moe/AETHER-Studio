@@ -199,14 +199,14 @@ def artifact_preview(artifact_id: int) -> tuple[bytes, str, dict]:
     archive = client.download_artifact(artifact_id)
     with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
         names = bundle.namelist()
+        metadata_name = next((name for name in names if name.lower().endswith("metadata.json")), "")
+        metadata = json.loads(bundle.read(metadata_name).decode("utf-8")) if metadata_name else {}
         preview_name = next((name for name in names if name.lower().endswith("preview.mp4")), "")
         if not preview_name:
             preview_name = next((name for name in names if name.lower().endswith("final.mp4")), "")
         if not preview_name:
-            raise RuntimeError("Artifact ထဲတွင် preview/final MP4 မတွေ့ပါ။ Build အသစ်ဖြင့် job ပြန် run ပါ။")
+            return b"", "", metadata
         data = bundle.read(preview_name)
-        metadata_name = next((name for name in names if name.lower().endswith("metadata.json")), "")
-        metadata = json.loads(bundle.read(metadata_name).decode("utf-8")) if metadata_name else {}
     return data, Path(preview_name).name, metadata
 
 
@@ -455,12 +455,16 @@ def dashboard_page() -> None:
                     st.warning(f"Artifacts မဖတ်နိုင်ပါ: {exc}")
                     artifacts = []
                 for artifact in artifacts:
-                    key = f"artifact_link_{artifact['id']}"
+                    # Widget state နှင့် URL value ကို key တစ်ခုတည်းမသုံးရ။ Streamlit က
+                    # widget ဖန်တီးပြီးနောက် ထို key ကိုပြင်ခွင့်မပေးသောကြောင့် သီးခြားခွဲထားသည်။
+                    generate_key = f"generate_artifact_link_{artifact['id']}"
+                    link_state_key = f"artifact_download_url_{artifact['id']}"
                     preview_key = f"artifact_preview_{artifact['id']}"
                     size_mb = float(artifact.get("size_in_bytes", 0)) / (1024 * 1024)
                     st.caption(f"{artifact['name']} · {size_mb:.1f} MB")
                     preview_col, zip_col = st.columns(2)
-                    if preview_col.button("▶ Load video preview", key=f"load_{preview_key}", use_container_width=True):
+                    preview_label = "▶ Load video preview" if state == "success" else "View worker error details"
+                    if preview_col.button(preview_label, key=f"load_{preview_key}", use_container_width=True):
                         try:
                             with st.spinner("Preview ကို Artifact မှဖတ်နေပါသည်..."):
                                 preview_bytes, preview_name, preview_metadata = artifact_preview(int(artifact["id"]))
@@ -475,17 +479,24 @@ def dashboard_page() -> None:
                         preview_metadata = preview_data.get("metadata", {})
                         if preview_metadata.get("status") == "FAILED":
                             st.error(f"Worker error: {preview_metadata.get('error', 'Unknown error')}")
+                            traceback_text = str(preview_metadata.get("traceback", "")).strip()
+                            if traceback_text:
+                                with st.expander("Technical traceback"):
+                                    st.code(traceback_text, language="text")
                         elif preview_metadata.get("status") == "COMPLETED":
                             st.success("Worker metadata: completed")
-                        st.markdown('<div class="preview-shell">', unsafe_allow_html=True)
-                        st.video(preview_data["bytes"], format="video/mp4")
-                        st.download_button(
-                            "Download preview MP4  ↓", data=preview_data["bytes"],
-                            file_name=preview_data["name"], mime="video/mp4",
-                            key=f"download_{preview_key}", use_container_width=True,
-                        )
-                        st.markdown("</div>", unsafe_allow_html=True)
-                    if zip_col.button("Generate ZIP download", key=key, use_container_width=True):
+                        if preview_data.get("bytes"):
+                            st.markdown('<div class="preview-shell">', unsafe_allow_html=True)
+                            st.video(preview_data["bytes"], format="video/mp4")
+                            st.download_button(
+                                "Download preview MP4  ↓", data=preview_data["bytes"],
+                                file_name=preview_data["name"], mime="video/mp4",
+                                key=f"download_{preview_key}", use_container_width=True,
+                            )
+                            st.markdown("</div>", unsafe_allow_html=True)
+                        elif preview_metadata.get("status") != "FAILED":
+                            st.warning("Artifact ထဲတွင် preview/final MP4 မတွေ့ပါ။")
+                    if zip_col.button("Generate ZIP download", key=generate_key, use_container_width=True):
                         try:
                             with st.spinner("GitHub download link ပြင်ဆင်နေပါသည်..."):
                                 # Client file အဟောင်းရှိနေလည်း app.py တစ်ဖိုင်တည်း update ဖြင့်
@@ -498,12 +509,12 @@ def dashboard_page() -> None:
                                 location = response.headers.get("Location", "")
                                 if not location:
                                     raise RuntimeError("GitHub download URL မရပါ။")
-                                st.session_state[key] = location
+                                st.session_state[link_state_key] = location
                         except Exception as exc:
                             st.error(f"Download link မရပါ: {exc}")
-                    if st.session_state.get(key):
+                    if st.session_state.get(link_state_key):
                         st.link_button(
-                            "Download output ZIP  ↓", st.session_state[key],
+                            "Download output ZIP  ↓", st.session_state[link_state_key],
                             use_container_width=True,
                         )
                         st.caption("Temporary link ဖြစ်သောကြောင့် မရတော့လျှင် Generate ကိုထပ်နှိပ်ပါ။")
@@ -523,7 +534,7 @@ def settings_page() -> None:
 with st.sidebar:
     st.markdown(
         '<div class="brand-lockup"><div class="mark">✦</div><b>AETHER</b>'
-        '<small>AUTONOMOUS MEDIA OS · BUILD 55.2 PRO</small></div>', unsafe_allow_html=True,
+        '<small>AUTONOMOUS MEDIA OS · BUILD 55.3 PRO</small></div>', unsafe_allow_html=True,
     )
     nav_labels = {"Dashboard": "◫  Operations", "Create Studio": "✦  Production", "Settings": "⚙  System"}
     page = st.radio("Workspace", list(nav_labels), format_func=nav_labels.get, label_visibility="collapsed")
