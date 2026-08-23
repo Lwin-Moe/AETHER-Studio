@@ -28,6 +28,27 @@ st.markdown(
     html,body,[class*="css"] { font-family:'Inter','Noto Sans Myanmar',sans-serif; }
     [data-testid="stSidebar"] { background:#0b0f18;border-right:1px solid var(--line); }
     [data-testid="stSidebarNav"] { display:none; }
+    /* Streamlit version ပြောင်းလဲသော်လည်း label/caption စာသားများ မှောင်မသွားစေရန် */
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stCaptionContainer"],
+    [data-testid="stCaptionContainer"] p,
+    [data-testid="stRadio"] label p,
+    [data-testid="stFileUploader"] small,
+    .stCheckbox label p { color:#b8c3d9!important;opacity:1!important; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong,
+    [data-testid="stSidebar"] [data-testid="stRadio"] label p { color:#dce5f5!important;opacity:1!important; }
+    /* Light widget background ပေါ်တွင် input value ကိုဖတ်ရှုရလွယ်စေရန် */
+    input,textarea { color:#172033!important;-webkit-text-fill-color:#172033!important; }
+    input::placeholder,textarea::placeholder { color:#667085!important;-webkit-text-fill-color:#667085!important;opacity:1!important; }
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] input { color:#172033!important;-webkit-text-fill-color:#172033!important; }
+    [data-testid="stFileUploaderDropzone"] { color:#263247!important; }
+    [data-testid="stFileUploaderDropzone"] span,
+    [data-testid="stFileUploaderDropzone"] small { color:#596579!important;opacity:1!important; }
     .block-container { max-width:1440px;padding-top:2rem; }
     h1,h2,h3 { letter-spacing:-.035em; }
     .hero { padding:26px 30px;border:1px solid var(--line);border-radius:22px;
