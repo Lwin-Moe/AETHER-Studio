@@ -1,0 +1,100 @@
+name: AETHER Background Worker
+run-name: AETHER · ${{ inputs.job_type }} · ${{ inputs.job_id }} · ${{ inputs.job_title }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: Unique AETHER job ID
+        required: true
+        type: string
+      job_type:
+        description: Studio pipeline name
+        required: true
+        type: choice
+        options: [movie_dubbing, translation, faceless, epic, veo, lyria, rerender]
+      job_title:
+        description: User-facing title
+        required: true
+        type: string
+      payload_b64:
+        description: URL-safe base64 JSON settings
+        required: true
+        type: string
+      input_release_id:
+        description: Temporary draft release ID
+        required: false
+        type: string
+      input_asset_id:
+        description: Temporary uploaded video asset ID
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aether-${{ inputs.job_id }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      PYTHONUNBUFFERED: "1"
+      AETHER_DATA_DIR: ${{ github.workspace }}/data
+      AETHER_MODEL_PROFILE: ${{ vars.AETHER_MODEL_PROFILE || 'balanced' }}
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      GROQ_API_KEYS: ${{ secrets.GROQ_API_KEYS }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AETHER_JOB_ID: ${{ inputs.job_id }}
+      AETHER_JOB_TYPE: ${{ inputs.job_type }}
+      AETHER_JOB_TITLE: ${{ inputs.job_title }}
+      AETHER_PAYLOAD_B64: ${{ inputs.payload_b64 }}
+      AETHER_INPUT_RELEASE_ID: ${{ inputs.input_release_id }}
+      AETHER_INPUT_ASSET_ID: ${{ inputs.input_asset_id }}
+
+    steps:
+      - name: Checkout public source code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install FFmpeg and Myanmar fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-core fonts-noto-extra
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run AETHER pipeline
+        id: pipeline
+        continue-on-error: true
+        run: |
+          python scripts/run_github_job.py \
+            --job-id "$AETHER_JOB_ID" \
+            --job-type "$AETHER_JOB_TYPE" \
+            --job-title "$AETHER_JOB_TITLE" \
+            --payload-b64 "$AETHER_PAYLOAD_B64" \
+            --input-release-id "$AETHER_INPUT_RELEASE_ID" \
+            --input-asset-id "$AETHER_INPUT_ASSET_ID"
+
+      - name: Upload outputs and error metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-${{ inputs.job_type }}-${{ inputs.job_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+      - name: Mark workflow failed when pipeline failed
+        if: steps.pipeline.outcome == 'failure'
+        run: exit 1
